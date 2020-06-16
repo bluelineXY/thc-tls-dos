@@ -86,6 +86,8 @@ struct _opt g_opt;
 	exit(-1); \
 } while (0)
 
+static int udp_flag = 0;
+
 static int tcp_connect_io(struct _peer *p);
 static int tcp_connect_try_finish(struct _peer *p, int ret);
 static void PEER_SSL_renegotiate(struct _peer *p);
@@ -131,7 +133,11 @@ init_vars(void)
 {
 	SSL_library_init();
 	SSL_load_error_strings();
-	g_opt.ctx = SSL_CTX_new(SSLv23_method()); 
+	if(udp_flag){
+		g_opt.ctx = SSL_CTX_new(DTLSv1_2_method()); 
+	} else {
+		g_opt.ctx = SSL_CTX_new(SSLv23_method()); 
+	}
 
 #ifdef SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION
 	SSL_CTX_set_options(g_opt.ctx, SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION);
@@ -143,7 +149,7 @@ init_vars(void)
 	/* RC4-MD5                 SSLv3 Kx=RSA      Au=RSA  Enc=RC4(128) */
 	/* RSA_decrypt() is 15x slower (used for Kx) than RSA_encrypt() */
 	//SSL_CTX_set_cipher_list(g_opt.ctx, "ECDHE-RSA-AES256-SHA");
-	SSL_CTX_set_cipher_list(g_opt.ctx, "AES256-SHA");
+	SSL_CTX_set_cipher_list(g_opt.ctx, "ALL");
 	//SSL_CTX_set_cipher_list(g_opt.ctx, "RC4-MD5");
 	//SSL_CTX_set_options(g_opt.ctx, SSL_OP_NO_TLSv1);
 	//SSL_CTX_set_options(ctx, SSL_OP_LEGACY_SERVER_CONNECT);
@@ -160,6 +166,7 @@ usage(void)
 "./" PROGRAM_NAME " [options] <ip> <port>\n"
 "  -h      help\n"
 "  -l <n>  Limit parallel connections [default: %d]\n"
+" -u udp (dtls)\n"
 "", DEFAULT_PEERS);
 	exit(0);
 }
@@ -181,7 +188,7 @@ do_getopt(int argc, char *argv[])
 	int option_index = 0;
 	
 
-	while ((c = getopt_long(argc, argv, "hl:", long_options, &option_index)) != -1)
+	while ((c = getopt_long(argc, argv, "uhl:", long_options, &option_index)) != -1)
 	{
 		switch (c)
 		{
@@ -189,6 +196,9 @@ do_getopt(int argc, char *argv[])
 			break;
 		case 'l':
 			g_opt.n_max_peers = atoi(optarg);
+			break;
+		case 'u':
+			udp_flag = 1;
 			break;
 		case 'h':
 		default:
@@ -542,8 +552,11 @@ int
 tcp_connect(struct _peer *p)
 {
 	int ret;
-
-	p->sox = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if(udp_flag){
+		p->sox = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	} else {
+		p->sox = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	}
 	if (p->sox < 0)
 		return -1;
 
