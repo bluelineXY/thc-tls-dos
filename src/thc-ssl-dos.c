@@ -134,7 +134,7 @@ init_vars(void)
 	SSL_library_init();
 	SSL_load_error_strings();
 	if(udp_flag){
-		g_opt.ctx = SSL_CTX_new(DTLSv1_2_method()); 
+		g_opt.ctx = SSL_CTX_new(DTLS_method()); 
 	} else {
 		g_opt.ctx = SSL_CTX_new(SSLv23_method()); 
 	}
@@ -149,7 +149,7 @@ init_vars(void)
 	/* RC4-MD5                 SSLv3 Kx=RSA      Au=RSA  Enc=RC4(128) */
 	/* RSA_decrypt() is 15x slower (used for Kx) than RSA_encrypt() */
 	//SSL_CTX_set_cipher_list(g_opt.ctx, "ECDHE-RSA-AES256-SHA");
-	SSL_CTX_set_cipher_list(g_opt.ctx, "ALL");
+	//SSL_CTX_set_cipher_list(g_opt.ctx, "ALL");
 	//SSL_CTX_set_cipher_list(g_opt.ctx, "RC4-MD5");
 	//SSL_CTX_set_options(g_opt.ctx, SSL_OP_NO_TLSv1);
 	//SSL_CTX_set_options(ctx, SSL_OP_LEGACY_SERVER_CONNECT);
